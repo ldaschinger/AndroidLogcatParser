@@ -9,6 +9,7 @@ __email__ = "ldaschinger@student.ethz.ch"
 
 
 import argparse
+import math
 import re
 from ast import literal_eval
 import numpy as np
@@ -83,10 +84,20 @@ def analyzeWebRTCStats(filepath):
     npArray = np.asarray(durations)
     npArrayDurations = npArray.astype(int)
 
-    total = sum(npArrayDurations*npArrayBitrates)
-    average = total/(timestamps_ms[-1]-timestamps_ms[0])
-    print('\naverage bitrate found: ')
-    print(average)
+    print('\naverage and stddev of bitrate found: ')
+    weightedAverage = np.average(npArrayBitrates, weights=npArrayDurations)
+    print(weightedAverage)
+
+    #weighted avg by hand:
+    # total = sum(npArrayDurations*npArrayBitrates)
+    # average = total/(timestamps_ms[-1]-timestamps_ms[0])
+
+    # calculate stddev weighted
+    variance = np.average((npArrayBitrates - weightedAverage) ** 2, weights=npArrayDurations)
+    print(math.sqrt(variance))
+
+    # print(weighted_stddev(bitrateValues, durations))
+
 
 
     # does not work like this since we need to weight bitrates
@@ -105,4 +116,4 @@ if __name__ == '__main__':
     # pass the filepath to the analysis function
     analyzeWebRTCStats(args.filepath)
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+
