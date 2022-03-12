@@ -12,6 +12,7 @@ import argparse
 import math
 import re
 from ast import literal_eval
+import matplotlib.pyplot as plt
 import numpy as np
 import json
 
@@ -29,8 +30,8 @@ def analyzeWebRTCStats(filepath):
     # group 5 = second
     # group 6 = millisecond
     # group 9 = bitrate
-    bitrateRegex = re.compile(r'(\d+)-(\d+) (\d+):(\d+):(\d+).(\d+)  (\d+)  (\d+) I ExtendedACodec:   int32_t bitrate = (\d+)') #ExtendedACodec:   int32_t bitrate = 2000000
-    timestampRegex = re.compile(r'(\d+)-(\d+) (\d+):(\d+):(\d+).(\d+)')
+    bitrateRegex = re.compile(r'(\d+)-(\d+)\s+(\d+):(\d+):(\d+).(\d+)\s+(\d+)\s+(\d+)\s+I\s+ExtendedACodec:\s+int32_t bitrate\s+=\s+(\d+)') #ExtendedACodec:   int32_t bitrate = 2000000
+    timestampRegex = re.compile(r'(\d+)-(\d+)\s+(\d+):(\d+):(\d+).(\d+)')
 
     # ---1...2...3...4...end
     # difference in ms = match.group(3)*3600000 + match.group(4)*60000 + match.group(5)*1000 + match.group(6)
@@ -84,9 +85,26 @@ def analyzeWebRTCStats(filepath):
     npArray = np.asarray(durations)
     npArrayDurations = npArray.astype(int)
 
+    print(npArrayDurations)
+    fromSampleN = 0
+
+    npArrayConstantTimestamps = npArrayDurations[npArrayDurations > 4500]
+    print(npArrayConstantTimestamps)
+    npArrayConstantBitrates = npArrayBitrates[npArrayDurations > 4500]
+    print(npArrayConstantBitrates)
+
+
+    # we do not want bitrates that are present for only a few seconds (the ones until ramp up is completed)
+    # we create new arrays with durations and bitrates which were present for over 4s
+
     print('\naverage and stddev of bitrate found: ')
+    # weightedAverage = np.average(npArrayBitrates[fromSampleN:], weights=npArrayDurations[fromSampleN:])
     weightedAverage = np.average(npArrayBitrates, weights=npArrayDurations)
     print(weightedAverage)
+
+    plt.plot(npArrayBitrates)
+    plt.plot(npArrayDurations)
+    plt.show()
 
     #weighted avg by hand:
     # total = sum(npArrayDurations*npArrayBitrates)
