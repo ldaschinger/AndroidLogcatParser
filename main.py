@@ -11,11 +11,8 @@ __email__ = "ldaschinger@student.ethz.ch"
 import argparse
 import math
 import re
-from ast import literal_eval
 import matplotlib.pyplot as plt
 import numpy as np
-import json
-
 
 
 def analyzeWebRTCStats(filepath):
@@ -24,7 +21,7 @@ def analyzeWebRTCStats(filepath):
         head = [next(myfile) for x in range(6)]
     # print(head, "\n")
 
-    #02-15 10:21:28.803  2621  3794 I ExtendedACodec:   int32_t bitrate =
+    # define regex expressions for required values of codec bitrate and timestamp
     # group 3 = hour
     # group 4 = minute
     # group 5 = second
@@ -38,16 +35,12 @@ def analyzeWebRTCStats(filepath):
     timestamps_ms = []
     bitrateValues = []
 
-    # get the last timetamp
+    # get the last timestamp
     with open(filepath) as f:
         lines = f.readlines()
         last = lines[-1]
         #detect last line and get its timestamp
         for match in re.finditer(timestampRegex, last):
-            # print(match.group(3))
-            # print(match.group(4))
-            # print(match.group(5))
-            # print(match.group(6))
             lastTimestamp = (int(match.group(3)) * 3600000) + int(match.group(4)) * 60000 + int(match.group(5)) * 1000 + int(match.group(6))
 
     for i, line in enumerate(open(filepath)):
@@ -55,10 +48,6 @@ def analyzeWebRTCStats(filepath):
             # print('Found on line %s: %s' % (i + 1, match.group(1)))
             # now append it to the availableOutgoingBitrate list
             bitrateValues.append(match.group(9))
-            # print(match.group(3))
-            # print(match.group(4))
-            # print(match.group(5))
-            # print(match.group(6))
             timestamp = (int(match.group(3)) * 3600000) + int(match.group(4)) * 60000 + int(match.group(5)) * 1000 + int(match.group(6))
             timestamps_ms.append(timestamp)
 
@@ -88,15 +77,13 @@ def analyzeWebRTCStats(filepath):
     print(npArrayDurations)
     fromSampleN = 0
 
+    # during ramp up of the test, bitrate increases in short intervals. We only want to consider the stable parts:
     npArrayConstantTimestamps = npArrayDurations[npArrayDurations > 4500]
     print(npArrayConstantTimestamps)
     npArrayConstantBitrates = npArrayBitrates[npArrayDurations > 4500]
     print(npArrayConstantBitrates)
 
-
-    # we do not want bitrates that are present for only a few seconds (the ones until ramp up is completed)
-    # we create new arrays with durations and bitrates which were present for over 4s
-
+    # calculate a weighted avarage using the duration of a bitrate being used as the weights
     print('\naverage and stddev of bitrate found: ')
     # weightedAverage = np.average(npArrayBitrates[fromSampleN:], weights=npArrayDurations[fromSampleN:])
     weightedAverage = np.average(npArrayBitrates, weights=npArrayDurations)
@@ -106,7 +93,7 @@ def analyzeWebRTCStats(filepath):
     plt.plot(npArrayDurations)
     plt.show()
 
-    #weighted avg by hand:
+    # weighted avg by hand:
     # total = sum(npArrayDurations*npArrayBitrates)
     # average = total/(timestamps_ms[-1]-timestamps_ms[0])
 
@@ -115,14 +102,6 @@ def analyzeWebRTCStats(filepath):
     print(math.sqrt(variance))
 
     # print(weighted_stddev(bitrateValues, durations))
-
-
-
-    # does not work like this since we need to weight bitrates
-    # npArray = np.asarray(bitrateValues)
-    # npArray = npArray.astype(int)
-    # print("\nAVERAGE bitrateValues: " + str(npArray.mean()))
-    # print("STDDEV bitrateValues: " + str(npArray.std()))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
